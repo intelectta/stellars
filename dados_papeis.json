@@ -1,0 +1,28 @@
+{
+  "dados_papeis": [
+    {
+      "Função": "CEO / Presidente",
+      "Descrição": "Responsável máximo pela direção estratégica da organização.",
+      "Tarefas": [
+        "Definir visão e metas estratégicas.",
+        "Gerenciar recursos e parcerias."
+      ]
+    },
+    {
+      "Função": "Desenvolvedor Full Stack",
+      "Descrição": "Atua no front-end e back-end de aplicações.",
+      "Tarefas": [
+        "Desenvolver APIs e interfaces.",
+        "Garantir segurança e desempenho."
+      ]
+    },
+    {
+      "Função": "Produtor Cultural",
+      "Descrição": "Planeja e executa projetos culturais.",
+      "Tarefas": [
+        "Gerir equipes e orçamentos.",
+        "Coordenar eventos e ações culturais."
+      ]
+    }
+  ]
+}

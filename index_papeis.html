@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>papeis_iectta v12</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: var(--bg);
+    color: var(--fg);
+    margin: 0;
+    padding: 0;
+    transition: background-color .3s, color .3s;
+  }
+  :root {
+    --bg: #0d1117;
+    --fg: #e6edf3;
+    --card: #161b22;
+    --accent: #58a6ff;
+  }
+  body.light {
+    --bg: #ffffff;
+    --fg: #111111;
+    --card: #f2f2f2;
+    --accent: #0077ff;
+  }
+  header {
+    display:flex;justify-content:space-between;align-items:center;
+    padding:1rem 1.5rem;background-color:var(--card);
+  }
+  h1 {margin:0;font-size:1.3rem;}
+  button,select,textarea,input {
+    background-color:var(--card);
+    color:var(--fg);
+    border:1px solid var(--accent);
+    border-radius:6px;
+    padding:6px 10px;
+    margin:4px;
+  }
+  button:hover {background-color:var(--accent);color:#fff;}
+  textarea {width:100%;min-height:80px;}
+  .container{padding:1rem;max-width:1000px;margin:auto;}
+  .statusbar {
+    position:fixed;bottom:0;left:0;right:0;
+    background-color:var(--card);
+    color:var(--fg);
+    text-align:center;
+    padding:.4rem;
+    font-size:.9rem;
+  }
+  .list {margin-top:1rem;}
+  .list-item {
+    background-color:var(--card);
+    padding:.7rem;
+    border-radius:6px;
+    margin-bottom:.5rem;
+    cursor:pointer;
+  }
+  .highlight{border:1px solid var(--accent);}
+</style>
+</head>
+<body>
+<header>
+  <h1>papeis_iectta v12</h1>
+  <div>
+    <button id="toggleTheme">🌗 Tema</button>
+    <button id="loadEncrypted">🔐 Descriptografar</button>
+    <button id="exportJSON">💾 Exportar</button>
+    <button id="importJSON">📂 Importar</button>
+  </div>
+</header>
+
+<div class="container">
+  <label>Função:</label>
+  <select id="funcaoSelect"></select><br/>
+  <label>Escopo:</label>
+  <select id="escopoSelect">
+    <option>iectta</option>
+    <option>Parceiro</option>
+    <option>Colaborador</option>
+    <option>Outro</option>
+  </select><br/>
+  <label>Status:</label>
+  <select id="statusSelect">
+    <option>Indefinido</option>
+    <option>Existente</option>
+    <option>Prévio</option>
+    <option>Não Existente</option>
+    <option>Buscando</option>
+    <option>Proposta Enviada</option>
+    <option>Aguardando</option>
+  </select>
+  <h3>Descrição</h3>
+  <textarea id="descricao"></textarea>
+  <h3>Tarefas</h3>
+  <textarea id="tarefas"></textarea>
+  <div>
+    <button id="addBtn">➕ Adicionar</button>
+    <button id="editBtn">✏️ Editar</button>
+    <button id="deleteBtn">🗑️ Apagar</button>
+    <button id="saveBtn">💾 Salvar</button>
+  </div>
+
+  <div class="list" id="listContainer"></div>
+</div>
+<div class="statusbar" id="statusBar">Pronto.</div>
+
+<script>
+// ==== tema ====
+const body=document.body;
+const themeBtn=document.getElementById('toggleTheme');
+body.classList.toggle('light',localStorage.getItem('theme')==='light');
+themeBtn.onclick=()=>{body.classList.toggle('light');localStorage.setItem('theme',body.classList.contains('light')?'light':'dark');};
+
+// ==== status ====
+function status(msg){document.getElementById('statusBar').textContent=msg;}
+
+// ==== base ====
+let dados=[];
+async function carregarJSON(){
+  try{
+    const r=await fetch('dados_papeis.json');
+    const j=await r.json();
+    dados=j.dados_papeis||[];
+    popularFuncoes();
+    renderList();
+    status('Dados carregados (modo aberto).');
+  }catch(e){status('Erro ao carregar JSON.');}
+}
+carregarJSON();
+
+// ==== funções ====
+function popularFuncoes(){
+  const sel=document.getElementById('funcaoSelect');
+  sel.innerHTML=dados.map(d=>`<option>${d['Função']}</option>`).join('');
+}
+
+// ==== render ====
+function renderList(){
+  const list=document.getElementById('listContainer');
+  list.innerHTML=dados.map((d,i)=>`<div class="list-item" onclick="selecionar(${i})">${d['Função']}</div>`).join('');
+}
+
+// ==== seleção ====
+let selecionado=-1;
+window.selecionar=(i)=>{
+  selecionado=i;
+  const d=dados[i];
+  document.getElementById('funcaoSelect').value=d['Função'];
+  document.getElementById('descricao').value=d['Descrição'];
+  document.getElementById('tarefas').value=d['Tarefas'].join('\\n');
+  status('Item selecionado: '+d['Função']);
+};
+
+// ==== CRUD ====
+document.getElementById('addBtn').onclick=()=>{
+  const f=document.getElementById('funcaoSelect').value;
+  const desc=document.getElementById('descricao').value;
+  const tar=document.getElementById('tarefas').value.split(/\\n+/).filter(Boolean);
+  dados.push({"Função":f,"Descrição":desc,"Tarefas":tar});
+  renderList();status('Função adicionada.');
+};
+document.getElementById('editBtn').onclick=()=>{
+  if(selecionado<0)return;
+  const f=document.getElementById('funcaoSelect').value;
+  const desc=document.getElementById('descricao').value;
+  const tar=document.getElementById('tarefas').value.split(/\\n+/).filter(Boolean);
+  dados[selecionado]={"Função":f,"Descrição":desc,"Tarefas":tar};
+  renderList();status('Função editada.');
+};
+document.getElementById('deleteBtn').onclick=()=>{
+  if(selecionado<0)return;
+  dados.splice(selecionado,1);
+  selecionado=-1;
+  renderList();status('Função removida.');
+};
+document.getElementById('saveBtn').onclick=()=>{
+  const blob=new Blob([JSON.stringify({dados_papeis:dados},null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='dados_papeis.json';
+  a.click();
+  status('Arquivo salvo localmente.');
+};
+
+// ==== export/import ====
+document.getElementById('exportJSON').onclick=()=>{
+  const blob=new Blob([JSON.stringify({dados_papeis:dados},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='export_papeis.json';a.click();
+  status('Exportado com sucesso.');
+};
+document.getElementById('importJSON').onclick=()=>{
+  const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=async()=>{const t=await inp.files[0].text();dados=JSON.parse(t).dados_papeis||[];popularFuncoes();renderList();status('Importado.');};
+  inp.click();
+};
+
+// ==== descriptografia AES-GCM ====
+document.getElementById('loadEncrypted').onclick=async()=>{
+  try{
+    const key=prompt('Informe a chave de descriptografia:');
+    const file=await fetch('dados_papeis_encrypted.json').then(r=>r.json());
+    const dec=await decryptAES(file,key);
+    dados=JSON.parse(dec).dados_papeis||[];
+    popularFuncoes();renderList();
+    status('Banco descriptografado com sucesso.');
+  }catch(e){status('Falha na descriptografia.');}
+};
+
+async function decryptAES(obj,password){
+  const dec=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0));
+  const salt=dec(obj.salt),nonce=dec(obj.nonce),tag=dec(obj.tag),ct=dec(obj.ciphertext);
+  const keyMaterial=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:500000,hash:'SHA-512'},keyMaterial,{name:'AES-GCM',length:256},false,['decrypt']);
+  const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:nonce,additionalData:new Uint8Array(),tagLength:128},key,new Uint8Array([...ct]));
+  return new TextDecoder().decode(plain);
+}
+</script>
+</body>
+</html>
